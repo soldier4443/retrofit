@@ -22,6 +22,8 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// Request 헤더를 작성할 때 쓰는 parameter 단위 annotation.
+
 /**
  * Replaces the header with the value of its target.
  * <pre><code>

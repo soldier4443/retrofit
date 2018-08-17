@@ -22,7 +22,12 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// @Query와 비슷하지만 이건 값이 없음
+
 /**
+ * @see Query
+ * @see retrofit2.ParameterHandler.QueryName
+ *
  * Query parameter appended to the URL that has no value.
  * <p>
  * Passing a {@link java.util.List List} or array will result in a query parameter for each

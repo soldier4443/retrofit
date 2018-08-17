@@ -16,7 +16,9 @@
 package retrofit2;
 
 import java.io.IOException;
+
 import javax.annotation.Nullable;
+
 import okhttp3.FormBody;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
@@ -86,14 +88,17 @@ final class RequestBuilder {
     }
   }
 
+  // url에 포함된 {path_param} 부분을 실제 값으로 치환하는 부분.
   void addPathParam(String name, String value, boolean encoded) {
+    // @Query랑 @Path를 함께 쓰면 안되기 때문에..
     if (relativeUrl == null) {
       // The relative URL is cleared when the first query parameter is set.
       throw new AssertionError();
     }
     relativeUrl = relativeUrl.replace("{" + name + "}", canonicalizeForPath(value, encoded));
   }
-
+  
+  // 인코딩이 필요한지 테스트. - 필요 시 인코딩하고 아니면 안함
   private static String canonicalizeForPath(String input, boolean alreadyEncoded) {
     int codePoint;
     for (int i = 0, limit = input.length(); i < limit; i += Character.charCount(codePoint)) {
@@ -113,6 +118,7 @@ final class RequestBuilder {
     return input;
   }
 
+  // URL Encoding 수행
   private static void canonicalizeForPath(Buffer out, String input, int pos, int limit,
       boolean alreadyEncoded) {
     Buffer utf8Buffer = null; // Lazily allocated.
@@ -129,6 +135,9 @@ final class RequestBuilder {
         if (utf8Buffer == null) {
           utf8Buffer = new Buffer();
         }
+        // 안 -> utf8Buffer
+        // utf8Buffer.readByte() -> first 1byte of 안 -> %EC
+        // utf8Buffer.readByte() -> second 1byte of 안 -> %95
         utf8Buffer.writeUtf8CodePoint(codePoint);
         while (!utf8Buffer.exhausted()) {
           int b = utf8Buffer.readByte() & 0xff;

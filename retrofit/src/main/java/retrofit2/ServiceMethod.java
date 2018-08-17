@@ -17,17 +17,26 @@ package retrofit2;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+
 import javax.annotation.Nullable;
 
 import static retrofit2.Utils.methodError;
 
+// 이 녀셕은 뭘 하는 녀석일까?
 abstract class ServiceMethod<T> {
+  // 1. 타입 검사 수행
+  // 2. 실질적으로 Api가 정의된 interface의 메소드를 ServiceMethod로 바꾸는 작업을 수행함
   static <T> ServiceMethod<T> parseAnnotations(Retrofit retrofit, Method method) {
+    // getGenericReturnType() -> return generic Type (with Type parameter)
     Type returnType = method.getGenericReturnType();
+    
+    // String - 일반 타입이거나
+    // List<String> - ParameterizedType 이거나 등등이어야 함.
     if (Utils.hasUnresolvableType(returnType)) {
       throw methodError(method,
           "Method return type must not include a type variable or wildcard: %s", returnType);
     }
+    
     if (returnType == void.class) {
       throw methodError(method, "Service methods cannot return void.");
     }

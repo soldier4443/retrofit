@@ -18,10 +18,14 @@ package retrofit2;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.http.Streaming;
 
+// 말 그대로 빌트인으로 제공하는 Converters.
+// "기본" Converter 로써 사용된다.
+// Retrofit.Builder#build를 보면 다른 converter들보다 먼저 list에 넣는 것을 볼 수 있음.
 final class BuiltInConverters extends Converter.Factory {
   @Override
   public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] annotations,
@@ -86,6 +90,7 @@ final class BuiltInConverters extends Converter.Factory {
     }
   }
 
+  // Object를 String으로 바꾸는 Converter.
   static final class ToStringConverter implements Converter<Object, String> {
     static final ToStringConverter INSTANCE = new ToStringConverter();
 

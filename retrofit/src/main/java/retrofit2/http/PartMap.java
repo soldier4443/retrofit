@@ -18,10 +18,13 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import retrofit2.Converter;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// Part의 Map 버전. okhttp3.MultipartBody.Part를 지원하지 않는 듯..
 
 /**
  * Denotes name and value parts of a multi-part request.

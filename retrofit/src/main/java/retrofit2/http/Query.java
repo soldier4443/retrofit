@@ -20,12 +20,17 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
+
 import retrofit2.Retrofit;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// URL에 ?id=1&type=SOMETHING 과 같은 식으로 파라미터를 덧붙일 수 있다.
+
 /**
+ * @see retrofit2.ParameterHandler.Query
+ *
  * Query parameter appended to the URL.
  * <p>
  * Values are converted to strings using {@link Retrofit#stringConverter(Type, Annotation[])}

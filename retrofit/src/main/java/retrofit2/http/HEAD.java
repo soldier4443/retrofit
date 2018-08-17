@@ -18,10 +18,15 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import okhttp3.HttpUrl;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// GET request와 동일하게 요청을 하지만,
+// Response Body가 없고 Response Header만 가져온다.
+// 헤더에 들어있는 메타데이터만 필요할 떄 유용함.
 
 /** Make a HEAD request. */
 @Documented

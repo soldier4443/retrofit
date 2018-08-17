@@ -17,8 +17,15 @@ package retrofit2;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.concurrent.Executor;
 
 /**
+ * 그냥 우리가 일반적으로 {@code Call<String>} 이런 식으로 쓰는거.
+ * {@link Platform#defaultCallAdapterFactory(Executor)}
+ * 여기를 보면 default로 사용하고 있는 것을 알 수 있다.
+ * 아래 설명을 보면 CallAdapter가 IO 작업과 application-level 작업에 같은 쓰레드를 사용한다고 나옴.
+ * (Android에서 application-level 작업이라면 당연히 UI 작업이겠지?)
+ *
  * Creates call adapters for that uses the same thread for both I/O and application-level
  * callbacks. For synchronous calls this is the application thread making the request; for
  * asynchronous calls this is a thread provided by OkHttp's dispatcher.

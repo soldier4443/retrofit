@@ -19,10 +19,18 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.Executor;
+
 import okhttp3.Request;
 
 import static retrofit2.Utils.checkNotNull;
 
+/**
+ * DefaultCallAdapterFactory와는 다르게 이 녀석은 asynchronous call을 했을 때
+ * I/O 작업과 UI 작업의 쓰레드가 서로 다름.
+ *
+ * 그렇다면 우리가 안드로이드쪽에서 enqueue()를 호출할 떄 그 콜백은
+ * 메인쓰레드에서 실행하는게 보장이 되어있다는 거네요. 와우
+ */
 final class ExecutorCallAdapterFactory extends CallAdapter.Factory {
   final Executor callbackExecutor;
 

@@ -22,6 +22,8 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// 파일 업로드 등을 할 떄 사용하는 Multipart request 지정.
+
 /**
  * Denotes that the request body is multi-part. Parts should be declared as parameters and
  * annotated with {@link Part @Part}.

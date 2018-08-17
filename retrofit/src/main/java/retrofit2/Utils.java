@@ -27,9 +27,13 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+
 import javax.annotation.Nullable;
+
 import okhttp3.ResponseBody;
 import okio.Buffer;
+
+// 여러 가지 쓸만한 것들이 있군..
 
 final class Utils {
   static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
@@ -38,6 +42,7 @@ final class Utils {
     // No instances.
   }
 
+  // Method 파싱/호출할 때 에러 발생 알림
   static RuntimeException methodError(Method method, String message, Object... args) {
     return methodError(method, null, message, args);
   }
@@ -51,7 +56,8 @@ final class Utils {
         + "."
         + method.getName(), cause);
   }
-
+  
+  // Parameter 파싱/호출할 때 에러 발생 알림
   static RuntimeException parameterError(Method method,
       Throwable cause, int p, String message, Object... args) {
     return methodError(method, cause, message + " (parameter #" + (p + 1) + ")", args);
@@ -61,6 +67,8 @@ final class Utils {
     return methodError(method, message + " (parameter #" + (p + 1) + ")", args);
   }
 
+  // 실제 Type을 반환.
+  // 가령 List<String> - parameterizedType 이라면 Class<List>를 반환하는것임..
   static Class<?> getRawType(Type type) {
     checkNotNull(type, "type == null");
 
@@ -138,6 +146,10 @@ final class Utils {
   }
 
   /**
+   * 와우..
+   * IntegerSet, Set.class -> {@code Set<Integer>}
+   * IntegerSet, Collection.class -> {@code Collection<Integer>}
+   *
    * Returns the generic supertype for {@code supertype}. For example, given a class {@code
    * IntegerSet}, the result for when supertype is {@code Set.class} is {@code Set<Integer>} and the
    * result when the supertype is {@code Collection.class} is {@code Collection<Integer>}.
@@ -152,6 +164,8 @@ final class Utils {
         if (interfaces[i] == toResolve) {
           return rawType.getGenericInterfaces()[i];
         } else if (toResolve.isAssignableFrom(interfaces[i])) {
+          // 그러니까.. 인터페이스 상속 계층을 DFS 방식으로, 역으로 탐색해서 올라가는 개념임.
+          // IntegerSet -> Set이 인터페이스에 있을텐데 이걸 가져오는게 rawType.getGenericInterfaces()[i].
           return getGenericSupertype(rawType.getGenericInterfaces()[i], interfaces[i], toResolve);
         }
       }
@@ -323,10 +337,13 @@ final class Utils {
     return ResponseBody.create(body.contentType(), body.contentLength(), buffer);
   }
 
+  // Retrofit에 전달된 interface가 Service interface인지 검증하는 작업.
   static <T> void validateServiceInterface(Class<T> service) {
+    // 인터페이스여야 하고
     if (!service.isInterface()) {
       throw new IllegalArgumentException("API declarations must be interfaces.");
     }
+    // 다른 인터페이스를 상속하면 안됨. (버그를 피할수도 있고 권장 패턴이라고 함)
     // Prevent API interfaces from extending other interfaces. This not only avoids a bug in
     // Android (http://b.android.com/58753) but it forces composition of API declarations which is
     // the recommended pattern.
@@ -335,6 +352,14 @@ final class Utils {
     }
   }
 
+  // Map<? extends Jam, String>
+  // -> type.getActualTypeArguments - ? extends Jam(wildcard type), String
+  // -> ((WildcardType) paramType).getUpperBounds()[0] -> Jam
+  //
+  // 즉.. List<? extends Jam> -> Jam, List<Jam> -> Jam
+  //
+  // 왜 인덱스가 있는걸까? - 자바8 부터는 multiple bounds가 가능함
+  // e.g. ? extends Iterable & Comparable
   static Type getParameterUpperBound(int index, ParameterizedType type) {
     Type[] types = type.getActualTypeArguments();
     if (index < 0 || index >= types.length) {
@@ -348,12 +373,16 @@ final class Utils {
     return paramType;
   }
 
+  // resolvable - Type 정보를 알아 낼 수 있는건지..
+  // TypeVariable이나 WildcardType은 true인걸 보면 T, 혹은 List<? extends Object> 같은 것들은 안되나봄
   static boolean hasUnresolvableType(@Nullable Type type) {
     if (type instanceof Class<?>) {
       return false;
     }
+    // ParameterizedType - Map<String, Object>
     if (type instanceof ParameterizedType) {
       ParameterizedType parameterizedType = (ParameterizedType) type;
+      // getActualTypeArguments() - String, Object
       for (Type typeArgument : parameterizedType.getActualTypeArguments()) {
         if (hasUnresolvableType(typeArgument)) {
           return true;
@@ -361,6 +390,7 @@ final class Utils {
       }
       return false;
     }
+    // GenericArrayType - List<String>[] or <T> T[]
     if (type instanceof GenericArrayType) {
       return hasUnresolvableType(((GenericArrayType) type).getGenericComponentType());
     }

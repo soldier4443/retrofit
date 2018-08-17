@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+
 import javax.annotation.Nullable;
+
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
@@ -58,13 +60,23 @@ import static retrofit2.Utils.checkNotNull;
  * @author Jake Wharton (jw@squareup.com)
  */
 public final class Retrofit {
+  // 간단한 in-memory cache임. ConcurrentHashMap을 사용한 이유는 아무래도 멀티쓰레드 환경을 감안한 것일듯.
   private final Map<Method, ServiceMethod<?>> serviceMethodCache = new ConcurrentHashMap<>();
 
   final okhttp3.Call.Factory callFactory;
   final HttpUrl baseUrl;
   final List<Converter.Factory> converterFactories;
   final List<CallAdapter.Factory> callAdapterFactories;
+  
+  
   final @Nullable Executor callbackExecutor;
+  
+  /**
+   * Validate Eagerly - 설정할 경우 Retrofit 인스턴스를 생성하는 시점에 service method를 로드함
+   * 즉 말 그대로 미리 확인하는 거라고 보면 된다. default는 false이고 false일 경우 생성 시점이 아니라
+   * 사용 시점에 validate가 되겠지? (죽거나.. 등등)
+   * Fast fail이라는 관점에서는 true로 하면 좋을듯 ㅋㅋ
+   */
   final boolean validateEagerly;
 
   Retrofit(okhttp3.Call.Factory callFactory, HttpUrl baseUrl,
@@ -127,6 +139,8 @@ public final class Retrofit {
   @SuppressWarnings("unchecked") // Single-interface proxy creation guarded by parameter safety.
   public <T> T create(final Class<T> service) {
     Utils.validateServiceInterface(service);
+    // validateEagerly가 설정되있을 경우 미리 한 번 Service method들을 로드하면서
+    // 잘못된 것은 없는지 검증한다.
     if (validateEagerly) {
       eagerlyValidateMethods(service);
     }
@@ -136,6 +150,7 @@ public final class Retrofit {
 
           @Override public Object invoke(Object proxy, Method method, @Nullable Object[] args)
               throws Throwable {
+            // 여기서 왜 이게 필요할까? toString(), equals()같은 Object의 메소드를 호출할 수도 있기 때문!
             // If the method is a method from Object then defer to normal invocation.
             if (method.getDeclaringClass() == Object.class) {
               return method.invoke(this, args);
@@ -148,6 +163,7 @@ public final class Retrofit {
         });
   }
 
+  // 결국 근본적으로는 위의 create() 메소드의 InvocationHandler#invoke에서 하는 것과 동일함.
   private void eagerlyValidateMethods(Class<?> service) {
     Platform platform = Platform.get();
     for (Method method : service.getDeclaredMethods()) {
@@ -157,10 +173,17 @@ public final class Retrofit {
     }
   }
 
+  // Method -> ServiceMethod로 바꾸는 작업
   ServiceMethod<?> loadServiceMethod(Method method) {
+    // 먼저 캐시를 확인 -> 캐시를 사용하는 이유는
+    // annotation processing 작업이 reflection을 사용하기 때문에
+    // 성능적으로 문제가 될 수 있기 때문임!
     ServiceMethod<?> result = serviceMethodCache.get(method);
     if (result != null) return result;
 
+    // ConcurrentHashMap을 사용했는데 왜 또 synchronized를 쓰는걸까?
+    // 그냥 아래 코드를 보면 이해가 됨. load는 단 한 번만 하면 되고,
+    // load가 되기 전까지는 접근하면 안되니까!
     synchronized (serviceMethodCache) {
       result = serviceMethodCache.get(method);
       if (result == null) {
@@ -349,6 +372,8 @@ public final class Retrofit {
   }
 
   /**
+   * converterFactory에서 stringConverter를 찾는다.
+   *
    * Returns a {@link Converter} for {@code type} to {@link String} from the available
    * {@linkplain #converterFactories() factories}.
    */
@@ -538,6 +563,9 @@ public final class Retrofit {
       return this;
     }
 
+    // 이 메소드들은 테스트를 위해서 필요한 것 같다.
+    // 만약 Retrofit이 Android 라이브러리였다면 @VisibleForTesting 을 쓰지 않았을까?
+    
     /** Returns a modifiable list of call adapter factories. */
     public List<CallAdapter.Factory> callAdapterFactories() {
       return this.callAdapterFactories;
@@ -579,6 +607,7 @@ public final class Retrofit {
       }
 
       // Make a defensive copy of the adapters and add the default Call adapter.
+      // Defensive copy - 의도치 않게 this.callAdapterFactories를 수정하는 일을 막음
       List<CallAdapter.Factory> callAdapterFactories = new ArrayList<>(this.callAdapterFactories);
       callAdapterFactories.add(platform.defaultCallAdapterFactory(callbackExecutor));
 

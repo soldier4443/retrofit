@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.annotation.Nullable;
+
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -58,7 +60,15 @@ import retrofit2.http.Url;
 import static retrofit2.Utils.methodError;
 import static retrofit2.Utils.parameterError;
 
+/**
+ * 자, 이제 여기서 annotation handling의 진수를 확인할 수 있음. 잘 보고 최대한 배워보자!!
+ * RequestFactory - 이 녀석의 역할은 뭘까? 말 그대로 Request를 만들어내는 공장임.
+ * Factory인 이유는.. 아마도 한 번 annotation processing을 한 다음 여러 개의 request를 보낼 때
+ * 이걸 이용해서 하기 때문인 것 같음.
+ */
+
 final class RequestFactory {
+  // Retrofit과 Method 정의(API inteface의)를 가지고 RequestFactory를 만드는 작업.
   static RequestFactory parseAnnotations(Retrofit retrofit, Method method) {
     return new Builder(retrofit, method).build();
   }
@@ -106,6 +116,9 @@ final class RequestFactory {
   }
 
   /**
+   * 역시나 Builder 패턴을 사용했음.
+   * 설명을 보니 계산 비용이 매우 큰 reflection을 사용하니 한 번 만들고 재사용하는게 좋을 거라고 하네..
+   *
    * Inspects the annotations on an interface method to construct a reusable service method. This
    * requires potentially-expensive reflection so it is best to build each service method only once
    * and reuse it. Builders cannot be reused.
@@ -113,6 +126,8 @@ final class RequestFactory {
   static final class Builder {
     // Upper and lower characters, digits, underscores, and hyphens, starting with a character.
     private static final String PARAM = "[a-zA-Z][a-zA-Z0-9_-]*";
+    
+    // @GET("some/url/{param}") 이런걸 찾을 때 쓰는 regex
     private static final Pattern PARAM_URL_REGEX = Pattern.compile("\\{(" + PARAM + ")\\}");
     private static final Pattern PARAM_NAME_REGEX = Pattern.compile(PARAM);
 
@@ -122,6 +137,7 @@ final class RequestFactory {
     final Annotation[][] parameterAnnotationsArray;
     final Type[] parameterTypes;
 
+    // got - parameter processing 여부를 나타내는 boolean 값
     boolean gotField;
     boolean gotPart;
     boolean gotBody;
@@ -130,11 +146,13 @@ final class RequestFactory {
     boolean gotQueryName;
     boolean gotQueryMap;
     boolean gotUrl;
+    
     String httpMethod;
     boolean hasBody;
     boolean isFormEncoded;
     boolean isMultipart;
     String relativeUrl;
+    
     Headers headers;
     MediaType contentType;
     Set<String> relativeUrlParamNames;
@@ -149,10 +167,12 @@ final class RequestFactory {
     }
 
     RequestFactory build() {
+      // 메소드에 달린 annotation 처리.
       for (Annotation annotation : methodAnnotations) {
         parseMethodAnnotation(annotation);
       }
 
+      // 파싱한거에 대해서 여러 가지 테스트
       if (httpMethod == null) {
         throw methodError(method, "HTTP method annotation is required (e.g., @GET, @POST, etc.).");
       }
@@ -168,6 +188,7 @@ final class RequestFactory {
         }
       }
 
+      // 각 파라미터에 달린 annotation 처리.
       int parameterCount = parameterAnnotationsArray.length;
       parameterHandlers = new ParameterHandler<?>[parameterCount];
       for (int p = 0; p < parameterCount; p++) {
@@ -185,6 +206,7 @@ final class RequestFactory {
         parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
       }
 
+      // 파싱한거에 대해서 여러 가지 테스트
       if (relativeUrl == null && !gotUrl) {
         throw methodError(method, "Missing either @%s URL or @Url parameter.", httpMethod);
       }
@@ -201,7 +223,9 @@ final class RequestFactory {
       return new RequestFactory(this);
     }
 
+    // 메소드 지정 어노테이션 파싱
     private void parseMethodAnnotation(Annotation annotation) {
+      // REST API method별로 설정하고~
       if (annotation instanceof DELETE) {
         parseHttpMethodAndPath("DELETE", ((DELETE) annotation).value(), false);
       } else if (annotation instanceof GET) {
@@ -220,6 +244,7 @@ final class RequestFactory {
         HTTP http = (HTTP) annotation;
         parseHttpMethodAndPath(http.method(), http.path(), http.hasBody());
       } else if (annotation instanceof retrofit2.http.Headers) {
+        // 헤더 파싱하고~
         String[] headersToParse = ((retrofit2.http.Headers) annotation).value();
         if (headersToParse.length == 0) {
           throw methodError(method, "@Headers annotation is empty.");
@@ -237,8 +262,13 @@ final class RequestFactory {
         isFormEncoded = true;
       }
     }
-
+  
+    /**
+     * 메소드 지정 annotation에서 여러 가지 값들을 추출.
+     * @param hasBody - POST, PUT, PATCH는 true.
+     */
     private void parseHttpMethodAndPath(String httpMethod, String value, boolean hasBody) {
+      // HTTP method가 여러개인지 체크.
       if (this.httpMethod != null) {
         throw methodError(method, "Only one HTTP method is allowed. Found: %s and %s.",
             this.httpMethod, httpMethod);
@@ -250,11 +280,13 @@ final class RequestFactory {
         return;
       }
 
+      // path에 quert string이 포함되있을 경우 빼내야함.
       // Get the relative URL path and existing query string, if present.
       int question = value.indexOf('?');
       if (question != -1 && question < value.length() - 1) {
         // Ensure the query string does not have any named parameters.
         String queryParams = value.substring(question + 1);
+        // GET("some/url/?param={param}") 이런거 잡아냄. 이건 안됨.
         Matcher queryParamMatcher = PARAM_URL_REGEX.matcher(queryParams);
         if (queryParamMatcher.find()) {
           throw methodError(method, "URL query string \"%s\" must not have replace block. "
@@ -266,16 +298,21 @@ final class RequestFactory {
       this.relativeUrlParamNames = parsePathParameters(value);
     }
 
+    // Content-Type: text/plain 이런 헤더들을 파싱하는거~~
+    // Okhttp쪽은 잘 모르겠음.
     private Headers parseHeaders(String[] headers) {
       Headers.Builder builder = new Headers.Builder();
       for (String header : headers) {
+        // colon이 있고 맨 앞이나 맨 끝이 아니어야함
         int colon = header.indexOf(':');
         if (colon == -1 || colon == 0 || colon == header.length() - 1) {
           throw methodError(method,
               "@Headers value must be in the form \"Name: Value\". Found: \"%s\"", header);
         }
+        // name, value 나누고
         String headerName = header.substring(0, colon);
         String headerValue = header.substring(colon + 1).trim();
+        // content-type일 때 특수 처리
         if ("Content-Type".equalsIgnoreCase(headerName)) {
           try {
             contentType = MediaType.get(headerValue);
@@ -288,9 +325,12 @@ final class RequestFactory {
       }
       return builder.build();
     }
-
+  
+    // 한 파라미터에 대한 어노테이션 프로세싱 + 여러 가지 검사
     private ParameterHandler<?> parseParameter(
         int p, Type parameterType, Annotation[] annotations) {
+      // 여러 어노테이션이 붙어있을 수 있으므로
+      // 유효한 하나의 annotation에 해당하는 ParameterHandler만 골라냄
       ParameterHandler<?> result = null;
       for (Annotation annotation : annotations) {
         ParameterHandler<?> annotationAction = parseParameterAnnotation(
@@ -300,6 +340,7 @@ final class RequestFactory {
           continue;
         }
 
+        // 이중 annotation 잡음.
         if (result != null) {
           throw parameterError(method, p, "Multiple Retrofit annotations found, only one allowed.");
         }
@@ -313,10 +354,12 @@ final class RequestFactory {
 
       return result;
     }
-
+  
+    // 파라미터 한 개의 어노테이션 processing
     private ParameterHandler<?> parseParameterAnnotation(
         int p, Type type, Annotation[] annotations, Annotation annotation) {
       if (annotation instanceof Url) {
+        // url은 두 번 이상 나올 수 없고 이것들과 같이 쓸 수 없음.
         if (gotUrl) {
           throw parameterError(method, p, "Multiple @Url method annotations found.");
         }
@@ -338,6 +381,8 @@ final class RequestFactory {
 
         gotUrl = true;
 
+        // @Url이 붙은 걸로는 이 4개만 받습니다~
+        // android.net.Uri가 저렇게 되있는 이유는, Retrofit이 순수 자바 프로젝트라서 ㅋㅋ
         if (type == HttpUrl.class
             || type == String.class
             || type == URI.class
@@ -381,7 +426,9 @@ final class RequestFactory {
 
         Class<?> rawParameterType = Utils.getRawType(type);
         gotQuery = true;
+        // @Query("something") List<String> 이런 상황
         if (Iterable.class.isAssignableFrom(rawParameterType)) {
+          // 그냥 List면 안되겠지?
           if (!(type instanceof ParameterizedType)) {
             throw parameterError(method, p, rawParameterType.getSimpleName()
                 + " must include generic type (e.g., "
@@ -394,6 +441,7 @@ final class RequestFactory {
               retrofit.stringConverter(iterableType, annotations);
           return new ParameterHandler.Query<>(name, converter, encoded).iterable();
         } else if (rawParameterType.isArray()) {
+          // @Query("something") String[] 이런 상황
           Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
           Converter<?, String> converter =
               retrofit.stringConverter(arrayComponentType, annotations);
@@ -436,9 +484,11 @@ final class RequestFactory {
       } else if (annotation instanceof QueryMap) {
         Class<?> rawParameterType = Utils.getRawType(type);
         gotQueryMap = true;
+        // 일단 맵이어야하고..
         if (!Map.class.isAssignableFrom(rawParameterType)) {
           throw parameterError(method, p, "@QueryMap parameter type must be Map.");
         }
+        // HashMap<K, V> 같은 걸 Map<K, V>으로 만들려고 하는걸까?
         Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
         if (!(mapType instanceof ParameterizedType)) {
           throw parameterError(method, p,
@@ -574,6 +624,7 @@ final class RequestFactory {
 
         String partName = part.value();
         Class<?> rawParameterType = Utils.getRawType(type);
+        // param - MultipartBody.Part
         if (partName.isEmpty()) {
           if (Iterable.class.isAssignableFrom(rawParameterType)) {
             if (!(type instanceof ParameterizedType)) {
@@ -603,6 +654,7 @@ final class RequestFactory {
                 "@Part annotation must supply a name or use MultipartBody.Part parameter type.");
           }
         } else {
+          // 여기서 multipart 헤더를 설정해줌.
           Headers headers =
               Headers.of("Content-Disposition", "form-data; name=\"" + partName + "\"",
                   "Content-Transfer-Encoding", part.encoding());
@@ -621,6 +673,11 @@ final class RequestFactory {
                   "@Part parameters using the MultipartBody.Part must not "
                       + "include a part name in the annotation.");
             }
+            // 여기서는 아까랑 다르게 왜 RequestBodyConverter를 사용할까? (아까는 StringConverter였음)
+            // 이유는 바로 Multipart request 자체가 곧바로 request body를 만들기 때문.
+            // 아마 Body도 마찬가지일듯?
+            // 여기서 Converter를 interface로 사용했을 때의 이득을 볼 수 있음.
+            // RequestBodyConverter와 StringConverter가 같은 converter를 구현하고 있기 때문에
             Converter<?, RequestBody> converter =
                 retrofit.requestBodyConverter(iterableType, annotations, methodAnnotations);
             return new ParameterHandler.Part<>(headers, converter).iterable();
@@ -673,11 +730,11 @@ final class RequestFactory {
               + "Use @Part List<Part> or a different value type instead.");
         }
 
-        Converter<?, RequestBody> valueConverter =
+        Converter<?, RequestBody> converter =
             retrofit.requestBodyConverter(valueType, annotations, methodAnnotations);
 
         PartMap partMap = (PartMap) annotation;
-        return new ParameterHandler.PartMap<>(valueConverter, partMap.encoding());
+        return new ParameterHandler.PartMap<>(converter, partMap.encoding());
 
       } else if (annotation instanceof Body) {
         if (isFormEncoded || isMultipart) {
@@ -702,18 +759,23 @@ final class RequestFactory {
       return null; // Not a Retrofit annotation.
     }
 
+    // @Path의 value를 검증.
     private void validatePathName(int p, String name) {
       if (!PARAM_NAME_REGEX.matcher(name).matches()) {
         throw parameterError(method, p, "@Path parameter name must match %s. Found: %s",
             PARAM_URL_REGEX.pattern(), name);
       }
       // Verify URL replacement name is actually present in the URL path.
+      // 앞서서 method level annotation을 처리할 때 relativeUrlParamNames를 저장한 이유가 여기있었음.
+      // 이후 parameter processing을 할 때 정의되어 있는 값과 일치하는지 검사하기 위해서.. ㄷㄷ
       if (!relativeUrlParamNames.contains(name)) {
         throw parameterError(method, p, "URL \"%s\" does not contain \"{%s}\".", relativeUrl, name);
       }
     }
 
     /**
+     * GET("some/{param}/") 이런거 찾아서 Set으로 반환해줌 ㅎㅎ
+     *
      * Gets the set of unique path parameters used in the given URI. If a parameter is used twice
      * in the URI, it will only show up once in the set.
      */
@@ -726,6 +788,7 @@ final class RequestFactory {
       return patterns;
     }
 
+    // 박싱까지 깔끔하게!
     private static Class<?> boxIfPrimitive(Class<?> type) {
       if (boolean.class == type) return Boolean.class;
       if (byte.class == type) return Byte.class;

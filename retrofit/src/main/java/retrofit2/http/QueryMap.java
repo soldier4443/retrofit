@@ -20,12 +20,18 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
+
 import retrofit2.Retrofit;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// @Query와 비슷하지만 name을 동적으로 사용할 수 있음.
+
 /**
+ * @see FieldMap
+ * @see retrofit2.ParameterHandler.QueryMap
+ *
  * Query parameter keys and values appended to the URL.
  * <p>
  * Values are converted to strings using {@link Retrofit#stringConverter(Type, Annotation[])}

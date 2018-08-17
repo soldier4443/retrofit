@@ -18,10 +18,13 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import okhttp3.HttpUrl;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// 기본적인 REST API 말고 다른 동작을 하고싶을 때 사용.
 
 /**
  * Use a custom HTTP verb for a request.

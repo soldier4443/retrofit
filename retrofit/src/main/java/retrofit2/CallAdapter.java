@@ -18,6 +18,7 @@ package retrofit2;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +39,11 @@ public interface CallAdapter<R, T> {
   Type responseType();
 
   /**
+   * Call을 위임하는 것 같다.
+   * 가령.. 우리가 반환형을 Call이 아니라 Observable로 선언했다면
+   * {@code Call<R>}를 {@code Observable<R>}로 바꿔줘야 하는데
+   * 이럴 때 사용하는 것 같다.
+   *
    * Returns an instance of {@code T} which delegates to {@code call}.
    * <p>
    * For example, given an instance for a hypothetical utility, {@code Async}, this instance would

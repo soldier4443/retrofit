@@ -18,10 +18,15 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import okhttp3.HttpUrl;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// Options request를 나타냄.
+// OPTIONS - pre-flight request라고 부르는데, 서버에 어떤 METHOD를 사용할 수 있는지 물어보는 요청임.
+// ref: https://stackoverflow.com/questions/29954037/why-is-an-options-request-sent-and-can-i-disable-it
 
 /** Make an OPTIONS request. */
 @Documented

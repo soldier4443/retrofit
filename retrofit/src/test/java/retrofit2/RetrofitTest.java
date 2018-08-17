@@ -15,6 +15,9 @@
  */
 package retrofit2;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
@@ -31,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -39,8 +43,6 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.Rule;
-import org.junit.Test;
 import retrofit2.helpers.DelegatingCallAdapterFactory;
 import retrofit2.helpers.NonMatchingCallAdapterFactory;
 import retrofit2.helpers.NonMatchingConverterFactory;
@@ -68,6 +70,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public final class RetrofitTest {
   @Rule public final MockWebServer server = new MockWebServer();
 
+  // Call로 감싸진 method들을 테스트하기 위한 interface
   interface CallMethod {
     @GET("/") Call<String> disallowed();
     @POST("/") Call<ResponseBody> disallowed(@Body String body);
@@ -81,9 +84,13 @@ public final class RetrofitTest {
     @GET("/") Call<ResponseBody> queryString(@Query("foo") String foo);
     @GET("/") Call<ResponseBody> queryObject(@Query("foo") Object foo);
   }
+  
+  // Future로 감싸진 method를 테스트하기 위한 interface
   interface FutureMethod {
     @GET("/") Future<String> method();
   }
+  
+  // API interface의 상속 금지를 확인하기 위한 interface
   interface Extending extends CallMethod {
   }
   interface StringService {
@@ -142,6 +149,8 @@ public final class RetrofitTest {
     }
   }
 
+  // one.newBuilder()를 호출했을 때 제대로 clone이 되는지 확인
+  // Builder(Retrofit)을 테스트
   @Test public void cloneSharesStatefulInstances() {
     CallAdapter.Factory callAdapter = mock(CallAdapter.Factory.class);
     Converter.Factory converter = mock(Converter.Factory.class);
@@ -172,6 +181,7 @@ public final class RetrofitTest {
     assertSame(callFactory, two.callFactory());
   }
 
+  // 클론 시 동작 확인.
   @Test public void builtInConvertersAbsentInCloneBuilder() {
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl(server.url("/"))
@@ -234,6 +244,7 @@ public final class RetrofitTest {
     retrofit.create(VoidService.class);
   }
 
+  // validateEagerly 설정에 대한 테스트.
   @Test public void validateEagerlyDisabledByUser() {
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl(server.url("/"))
@@ -243,7 +254,8 @@ public final class RetrofitTest {
     // Should not throw exception about incorrect configuration of the VoidService
     retrofit.create(VoidService.class);
   }
-
+  
+  // validateEagerly 설정에 대한 테스트.
   @Test public void validateEagerlyFailsAtCreation() {
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl(server.url("/"))
@@ -1222,7 +1234,8 @@ public final class RetrofitTest {
     assertThat(delegatingFactory2.called).isTrue();
     assertThat(nonMatchingFactory.called).isTrue();
   }
-
+  
+  // 클론 시 동작 확인.
   @Test public void platformAwareAdapterAbsentInCloneBuilder() {
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl(server.url("/"))
@@ -1230,7 +1243,8 @@ public final class RetrofitTest {
 
     assertEquals(0, retrofit.newBuilder().callAdapterFactories().size());
   }
-
+  
+  // callbackExecutor()를 호출할 때 null을 던지면 NPE가 나오는 것을 확인
   @Test public void callbackExecutorNullThrows() {
     try {
       new Retrofit.Builder().callbackExecutor(null);
@@ -1240,6 +1254,7 @@ public final class RetrofitTest {
     }
   }
 
+  // default callbackExecutor가 null이라는 걸 확인
   @Test public void callbackExecutorPropagatesDefaultJvm() {
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl("http://example.com/")
@@ -1247,6 +1262,8 @@ public final class RetrofitTest {
     assertThat(retrofit.callbackExecutor()).isNull();
   }
 
+  // Retrofit.Builder()에 전달한 platform에 따라서
+  // Retrofit의 callbackExecutor가 제대로 반영이 됬는지 확인
   @Test public void callbackExecutorPropagatesDefaultAndroid() {
     final Executor executor = Executors.newSingleThreadExecutor();
     Platform platform = new Platform() {
@@ -1260,6 +1277,7 @@ public final class RetrofitTest {
     assertThat(retrofit.callbackExecutor()).isSameAs(executor);
   }
 
+  // Retrofit.Builder#callbackExecutor()로 전달한 executor가 제대로 반영되는지 확인
   @Test public void callbackExecutorPropagated() {
     Executor executor = mock(Executor.class);
     Retrofit retrofit = new Retrofit.Builder()

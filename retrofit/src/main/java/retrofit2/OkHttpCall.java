@@ -16,8 +16,10 @@
 package retrofit2;
 
 import java.io.IOException;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
@@ -28,6 +30,8 @@ import okio.Okio;
 
 import static retrofit2.Utils.checkNotNull;
 import static retrofit2.Utils.throwIfFatal;
+
+// OkHttpCall.. Call의 구현체임.
 
 final class OkHttpCall<T> implements Call<T> {
   private final RequestFactory requestFactory;

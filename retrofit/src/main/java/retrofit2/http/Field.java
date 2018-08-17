@@ -20,10 +20,15 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
+
 import retrofit2.Retrofit;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// 이건.. @Query와 비슷한데 @FormUrlEncoded를 사용할 때 씀.
+// Query의 경우 URL에 &id=1 이런 식으로 붙이는거라면
+// Field는 정의된 내용을 가지고 Request Body를 해당 형식으로 만듦.
 
 /**
  * Named pair for a form-encoded request.

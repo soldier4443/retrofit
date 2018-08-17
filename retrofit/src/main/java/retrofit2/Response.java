@@ -16,12 +16,16 @@
 package retrofit2;
 
 import javax.annotation.Nullable;
+
 import okhttp3.Headers;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
 
 import static retrofit2.Utils.checkNotNull;
+
+// 고냥 okhttp3을 Wrapping한 친구인 듯 함!
+// 여러 가지 static 메소드들이 있지만 결국 상황에 따라서 여러 response를 만들 수 있게 해놓은듯.
 
 /** An HTTP response. */
 public final class Response<T> {

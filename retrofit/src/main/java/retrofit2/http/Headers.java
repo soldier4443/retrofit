@@ -22,6 +22,8 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// Request 헤더를 작성할 때 쓰는 method 단위 annotation
+
 /**
  * Adds headers literally supplied in the {@code value}.
  * <pre><code>

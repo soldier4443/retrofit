@@ -18,11 +18,14 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import retrofit2.Converter;
 import retrofit2.Retrofit;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// POST나 PUT 요청을 할 때 ResponseBody를 직접 때려넣고 싶을 경우 사용함
 
 /**
  * Use this annotation on a service method param when you want to directly control the request body

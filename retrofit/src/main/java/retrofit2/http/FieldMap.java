@@ -22,6 +22,10 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// @Field와 비슷하지만 Field는 interface에서 정의할 때 상수로 name이 정해지지만
+// 이건 Map의 key가 name, value가 곧 value가 됨
+// 아래 예시처럼 ImmutableMap.of("foo", "bar", "kit", "kat") -> foo=bar&kit=kat 이 생성됨
+
 /**
  * Named key/value pairs for a form-encoded request.
  * <p>

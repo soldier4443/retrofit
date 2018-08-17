@@ -22,6 +22,11 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+// Request의 MIME type을 application/x-www-form-urlencoded로 해줌.
+// -> request body가 URL인코딩 되었다는 걸 알려줌
+// ex) statement=this+is+an+apple
+// @Field에서 서술한 것처럼 함께 묶여서 사용됨.
+
 /**
  * Denotes that the request body will use form URL encoding. Fields should be declared as
  * parameters and annotated with {@link Field @Field}.

@@ -18,10 +18,22 @@ package retrofit2;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+
 import javax.annotation.Nullable;
+
 import okhttp3.ResponseBody;
 
 import static retrofit2.Utils.methodError;
+
+/**
+ * ServiceMethod의 구현체.
+ * 마찬가지로 Builder 패턴을 사용했음.
+ *
+ * 이걸 잘 보면 RequestFactory, CallFactory를 가지고 있는 것을 볼 수 있음.
+ * 왜 Factory일까? - Retrofit을 보면 ServiceMethod에 대한 cache를 가지고 있음.
+ * 즉 이 HttpServiceMethod는 여러 번 request를 날릴 때 재사용 된다는거고..
+ * 그래서 Request"Factory"이고 Call"Factory"인 것임.
+ */
 
 /** Adapts an invocation of an interface method into an HTTP call. */
 final class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<ReturnT> {
@@ -64,6 +76,7 @@ final class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<ReturnT>
     HttpServiceMethod<ResponseT, ReturnT> build() {
       requestFactory = RequestFactory.parseAnnotations(retrofit, method);
 
+      // call adapter retrofit에서 가져오고
       callAdapter = createCallAdapter();
       responseType = callAdapter.responseType();
       if (responseType == Response.class || responseType == okhttp3.Response.class) {
@@ -71,12 +84,15 @@ final class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<ReturnT>
             + Utils.getRawType(responseType).getName()
             + "' is not a valid response body type. Did you mean ResponseBody?");
       }
+      
+      // response converter retrofit에서 가져오고
       responseConverter = createResponseConverter();
 
       if (requestFactory.httpMethod.equals("HEAD") && !Void.class.equals(responseType)) {
         throw methodError(method, "HEAD method must use Void as response type.");
       }
 
+      // 생성!
       return new HttpServiceMethod<>(this);
     }
 

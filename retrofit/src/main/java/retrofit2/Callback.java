@@ -15,6 +15,8 @@
  */
 package retrofit2;
 
+// 그냥 Callback임. enqueue했을 때.
+
 /**
  * Communicates responses from a server or offline requests. One and only one method will be
  * invoked in response to a given request.

@@ -20,10 +20,13 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
+
 import retrofit2.Retrofit;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// URL 경로 세그먼트에 파라미터 값을 전달할 때 사용.
 
 /**
  * Named replacement in a URL path segment. Values are converted to strings using

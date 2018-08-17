@@ -18,10 +18,14 @@ package retrofit2.http;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
 import okhttp3.HttpUrl;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+// Put request 선언할 때 사용
+// PUT - only allows complete replacement of document.
 
 /** Make a PUT request. */
 @Documented
